@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>you're in my mind 24/7, dyk that?</title>
+    <link rel="preload" href="background.jpg" as="image">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Dancing+Script:wght@600;700&family=Lora:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           Romantic Color Scheme
+           #F7BEEF  Pastel Light Magenta
+           #CF9EE2  Light Orchid
+           #926BB8  Ce Soir
+           #D669AA  Super Pink
+           #F0A3DA  Alaina
+        ============================================================ */
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* ─────────────────────────────────────────────────────────
+           SHARED BACKGROUND (always visible under every phase)
+        ───────────────────────────────────────────────────────── */
+        body {
+            min-height: 100vh;
+            width: 100%;
+            font-family: 'Cormorant Garamond', 'Georgia', serif;
+            background: transparent;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Fixed background image — never scrolls */
+        #bgGradient {
+            position: fixed;
+            inset: 0;
+            background: url('background.jpg') no-repeat center center / cover;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* blurred photo overlay — fades in with main content */
+        #bgPhoto {
+            position: fixed;
+            inset: 0;
+            background: url('background.jpg') no-repeat center center / cover;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        #bgPhoto.visible { opacity: 1; }
+
+        /* ─────────────────────────────────────────────────────────
+           FLOATING HEARTS CANVAS (runs through every phase)
+        ───────────────────────────────────────────────────────── */
+        #heartsCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ─────────────────────────────────────────────────────────
+           LONE TREE SILHOUETTE
+        ───────────────────────────────────────────────────────── */
+        .field-strip.visible { opacity: 1; }
+
+        /* Pink field strip at bottom */
+        .field-strip {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 36%;
+            background: linear-gradient(180deg, transparent 0%, rgba(140,50,80,0.35) 40%, rgba(90,25,50,0.55) 100%);
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        
+
+
+        /* ================================================================
+           PHASE 1 — LOADING SCREEN
+        ================================================================ */
+        #loadingScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            /* starts visible, fades out */
+            opacity: 1;
+            transition: opacity 0.7s ease;
+            pointer-events: auto;
+        }
+        #loadingScreen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .load-card {
+            position: relative;
+            background: rgba(255,255,255,0.22);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.42);
+            border-radius: 18px;
+            padding: 20px 20px 20px;
+            width: min(300px, 82vw);
+            text-align: center;
+            box-shadow:
+                0 8px 32px rgba(120,60,140,0.25),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .load-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.35rem;
+            color: #c0386a;
+            margin-bottom: 4px;
+        }
+
+        .load-divider {
+            width: 60%; height: 1px;
+            background: linear-gradient(to right, transparent, rgba(192,56,106,0.5), transparent);
+            margin: 10px auto 20px;
+        }
+
+        .load-msg-wrap {
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .load-msg {
+            font-family: 'Lora', serif;
+            font-style: italic;
+            font-size: 0.95rem;
+            color: #5a2d6e;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(7px);
+            transition: opacity 0.45s ease, transform 0.45s ease;
+            position: absolute;
+            width: 100%;
+            padding: 0 4px;
+        }
+        .load-msg.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .progress-track {
+            width: 100%; height: 6px;
+            background: rgba(255,255,255,0.30);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #F0A3DA, #D669AA, #926BB8, #F0A3DA);
+            background-size: 300% 100%;
+            animation: progShimmer 2s linear infinite;
+            transition: width 0.12s linear;
+        }
+        @keyframes progShimmer {
+            0%   { background-position: 300% center; }
+            100% { background-position: -300% center; }
+        }
+
+        .load-percent {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1rem;
+            color: #c0386a;
+            letter-spacing: 0.05em;
+        }
+
+        .load-heart {
+            display: inline-block;
+            margin-top: 10px;
+            width: 24px;
+            height: 22px;
+            position: relative;
+            animation: heartbeat 1.4s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px rgba(214,105,170,0.7));
+        }
+        .load-heart::before,
+        .load-heart::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 20px;
+            background: #D669AA;
+            border-radius: 14px 14px 0 0;
+        }
+        .load-heart::before {
+            left: 12px;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+        }
+        .load-heart::after {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+        @keyframes heartbeat {
+            0%  { transform: scale(1); }
+            14% { transform: scale(1.22); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.12); }
+            70% { transform: scale(1); }
+        }
+
+
+        /* ================================================================
+           PHASE 2 — MAIN CONTENT (original)
+        ================================================================ */
+        #mainContent {
+            position: relative;
+            z-index: 30;
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.9s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        #mainContent.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .full-page-message {
+            width: 100%;
+            max-width: 560px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            padding: 16px 16px 20px;
+        }
+
+        /* Question block */
+        .question {
+            font-size: clamp(15px, 3.6vw, 19px);
+            color: #3a1a50;
+            text-align: center;
+            line-height: 1.6;
+            margin: 6px 0 14px;
+            padding: 16px 16px;
+            font-weight: 470;
+            text-shadow:
+                0 2px 6px  #F0A3DA,
+                0 0  14px  #D669AA55;
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(247, 190, 239, 0.28);
+            border-radius: 30px;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(240, 163, 218, 0.45);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            letter-spacing: 0.3px;
+        }
+        .question::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(120deg, transparent 0%, rgba(247,190,239,0.45) 50%, transparent 100%);
+            animation: shimmerQ 3.5s ease-in-out infinite;
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        @keyframes shimmerQ {
+            0%   { left: -100%; }
+            100% { left: 160%;  }
+        }
+
+        .compact-question { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+        .compact-question span { display: block; text-align: center; word-wrap: break-word; }
+
+        /* Button row */
+        .button-row {
+            display: flex;
+            gap: clamp(16px, 6vw, 40px);
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0 16px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(16px, 4.2vw, 24px);
+            padding: 10px 28px;
+            border: none;
+            border-radius: 60px;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 6px 14px rgba(146, 107, 184, 0.45);
+            transition: transform 0.2s ease, box-shadow 0.2s;
+            min-width: 110px;
+            text-align: center;
+            border: 2px solid rgba(247, 190, 239, 0.85);
+            font-weight: 550;
+            letter-spacing: 1px;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:active { transform: scale(0.96); box-shadow: 0 5px 12px rgba(146,107,184,0.6); }
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.18);
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .btn:active::after { opacity: 1; }
+
+        .yes-btn {
+            background: linear-gradient(145deg, #D669AA, #F0A3DA);
+            animation: pulseSoft 2.2s infinite;
+        }
+        .yes-btn:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 16px 32px rgba(214,105,170,0.6); }
+
+        .no-btn {
+            background: linear-gradient(145deg, #CF9EE2, #926BB8);
+        }
+        .no-btn.moved {
+            position: fixed;
+            /* position is now driven every frame by JS for a smooth "running" glide,
+               so left/top are NOT transitioned (that would fight the JS and cause lag) */
+            transition: box-shadow 0.18s ease-out;
+            z-index: 100;
+            box-shadow: 0 8px 16px rgba(146,107,184,0.55);
+            font-size: clamp(16px, 4.5vw, 26px);
+            padding: 10px 28px;
+            min-width: 110px;
+            max-width: none;
+            white-space: nowrap;
+            will-change: left, top;
+        }
+
+        /* Final section */
+        .final-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 16px 20px;
+            animation: riseUp 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        @keyframes riseUp {
+            0%   { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .final-message {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(20px, 6.5vw, 36px);
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 16px 24px 16px;
+            color: #C8002B;
+            text-align: center;
+            line-height: 1.2;
+            text-shadow: 0 3px 12px #F7BEEF, 0 0 25px #F0A3DA;
+            word-break: break-word;
+            background: rgba(247,190,239,0.18);
+            backdrop-filter: blur(3px);
+            border-radius: 60px;
+            display: inline-block;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes pulseSoft {
+            0%   { box-shadow: 0  8px 18px rgba(214,105,170,0.6); }
+            50%  { box-shadow: 0 12px 28px rgba(214,105,170,0.8), 0 0 0 3px rgba(247,190,239,0.7); }
+            100% { box-shadow: 0  8px 18px rgba(214,105,170,0.6); }
+        }
+
+        /* ── Decorative title ── */
+        .love-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(18px, 5vw, 32px);
+            color: #C01D3E;
+            text-shadow: 0 2px 8px #F0A3DA, 0 0 20px rgba(214,105,170,0.5);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            animation: titleFloat 3.5s ease-in-out infinite;
+        }
+        @keyframes titleFloat {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-6px); }
+        }
+
+        /* ── Petal divider ── */
+        .petal-divider {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; margin: 4px 0 18px; width: 100%; opacity: 0.75;
+        }
+        .petal-divider::before,
+        .petal-divider::after {
+            content: ''; flex: 1; max-width: 180px; height: 1px;
+            background: linear-gradient(90deg, transparent, #F0A3DA, transparent);
+        }
+        .petal-divider span {
+            font-size: 18px; color: #D669AA;
+            animation: spinPetal 8s linear infinite; display: inline-block;
+        }
+        @keyframes spinPetal { 100% { transform: rotate(360deg); } }
+
+        /* ── Confetti burst ── */
+        .heart-burst {
+            position: fixed; font-size: 24px;
+            pointer-events: none; z-index: 9999;
+            animation: burstFly 1.4s ease-out forwards;
+        }
+        @keyframes burstFly {
+            0%   { opacity: 1; transform: translate(0,0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4); }
+        }
+
+        /* Desktop enhancements */
+        @media (min-width: 768px) {
+            .load-card { width: 360px; padding: 28px 28px 24px; }
+            .load-title { font-size: 1.55rem; }
+            .load-msg   { font-size: 1.05rem; }
+            .question   { font-size: 19px; padding: 22px 24px; }
+            .love-title { font-size: clamp(24px, 3vw, 36px); }
+            .btn        { font-size: 22px; padding: 12px 36px; min-width: 130px; }
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .question { padding: 15px 12px; border-radius: 40px 40px 20px 20px; }
+            .btn { min-width: 140px; padding: 14px 30px; }
+        }
+        @media (max-width: 380px) {
+            .btn { min-width: 120px; padding: 12px 22px; }
+            .button-row { gap: 15px; }
+        }
+        @media (max-height: 500px) and (orientation: landscape) {
+            body { padding: 8px; }
+            .question { margin: 5px 0 15px; }
+            .btn { padding: 10px 24px; }
+        }
+
+        /* ── Footer ── */
+        .site-footer {
+            position: relative;
+            z-index: 30;
+            width: 100%;
+            text-align: center;
+            padding: 14px 20px 20px;
+        }
+        .site-footer::before {
+            content: '';
+            display: block;
+            width: 160px;
+            height: 1px;
+            margin: 0 auto 12px;
+            background: linear-gradient(to right, transparent, rgba(214,105,170,0.45), transparent);
+        }
+        .site-footer p {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            color: #3a1030;
+            font-weight: 500;
+            text-shadow:
+                0 1px 3px rgba(255,255,255,0.7),
+                0 0 10px rgba(255,255,255,0.5);
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fixed background layers -->
+    <div id="bgGradient"></div>
+    <div id="bgPhoto"></div>
+    <canvas id="heartsCanvas"></canvas>
+    
+    <div class="field-strip" id="fieldStrip"></div>
+
+
+    <!-- ═══════════════════════════════════════════════════
+         PHASE 1 — LOADING SCREEN
+    ═══════════════════════════════════════════════════ -->
+    <div id="loadingScreen">
+        <div class="load-card">
+            <div class="load-title">A confession for you 🌸</div>
+            <div class="load-divider"></div>
+
+            <div class="load-msg-wrap" id="loadMsgWrap">
+                <!-- messages injected by JS -->
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="load-percent" id="loadPercent">0%</div>
+            <div class="load-heart"></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════
+         PHASE 2 — MAIN CONTENT (original)
+    ═══════════════════════════════════════════════════ -->
+    <div id="mainContent">
+        <div class="full-page-message">
+            <div class="love-title">A confession for you 🌸</div>
+            <div class="petal-divider"><span>✿</span></div>
+
+            <div class="question compact-question" id="question">
+                I was fine. Then you showed up, and everything shifted. I don't just like
+                you, my mind is always on you. You're not my type. You're my exception.
+                I did not fall for you, it's just around you gravity feels suspicious. Some
+                people catch feelings. I caught you. So I need to ask with intention. Would
+                you let me court you properly, and see where this beautiful feeling leads
+                us?
+            </div>
+
+            <div class="button-row" id="buttonRow">
+                <button class="btn yes-btn" id="yesBtn">Yes</button>
+                <button class="btn no-btn"  id="noBtn">No</button>
+            </div>
+
+            <div class="final-section" id="finalSection">
+                <div class="final-message">You've just made my day absolutely perfect. 💖</div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p>© 2026 vocaji. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+    /* ════════════════════════════════════════════════════════════
+       FLOATING HEARTS CANVAS — runs at all times
+    ════════════════════════════════════════════════════════════ */
+    (function () {
+        const canvas = document.getElementById('heartsCanvas');
+        const ctx    = canvas.getContext('2d');
+        const COLORS = ['#F7BEEF','#CF9EE2','#D669AA','#F0A3DA','#926BB8'];
+        let hearts   = [];
+
+        function resize() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function heartPath(cx, cy, size) {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + size * 0.3);
+            ctx.bezierCurveTo(cx,        cy,          cx - size, cy,          cx - size, cy - size * 0.35);
+            ctx.bezierCurveTo(cx - size, cy - size,   cx,        cy - size,   cx,        cy - size * 0.6);
+            ctx.bezierCurveTo(cx,        cy - size,   cx + size, cy - size,   cx + size, cy - size * 0.35);
+            ctx.bezierCurveTo(cx + size, cy,          cx,        cy,          cx,        cy + size * 0.3);
+            ctx.closePath();
+        }
+
+        function spawnHeart() {
+            hearts.push({
+                x:          Math.random() * canvas.width,
+                y:          canvas.height + 20,
+                size:       4  + Math.random() * 10,
+                speed:      0.5 + Math.random() * 1.2,
+                drift:      (Math.random() - 0.5) * 0.6,
+                alpha:      0.15 + Math.random() * 0.35,
+                color:      COLORS[Math.floor(Math.random() * COLORS.length)],
+                wobble:     Math.random() * Math.PI * 2,
+                wobbleSpeed:0.02 + Math.random() * 0.02,
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (Math.random() < 0.12) spawnHeart();
+            hearts = hearts.filter(h => h.y > -30);
+            hearts.forEach(h => {
+                h.y      -= h.speed;
+                h.wobble += h.wobbleSpeed;
+                h.x      += Math.sin(h.wobble) * 0.5 + h.drift;
+                ctx.save();
+                ctx.globalAlpha = h.alpha;
+                ctx.fillStyle   = h.color;
+                heartPath(h.x, h.y, h.size);
+                ctx.fill();
+                ctx.restore();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    })();
+
+
+    /* ════════════════════════════════════════════════════════════
+       ORCHESTRATOR — drives loading → main transitions
+    ════════════════════════════════════════════════════════════ */
+    (function () {
+        const LOAD_DURATION  = 4800;   // loading phase (ms) — fast-to-slow progress
+
+        const loadScreen  = document.getElementById('loadingScreen');
+        const mainContent = document.getElementById('mainContent');
+        const bgPhoto     = document.getElementById('bgPhoto');
+        const fieldStrip  = document.getElementById('fieldStrip');
+
+        /* ── Loading messages (psychological pacing) ── */
+        const messages = [
+            "I was fine… before you.",
+            "Then you showed up.",
+            "And everything shifted.",
+            "My mind is always on you.",
+            "You're not my type.",
+            "You're my exception.",
+            "Gravity feels suspicious around you.",
+            "Some people catch feelings.",
+            "I caught you.",
+            "Asking with intention… ♡",
+        ];
+
+        const msgWrap = document.getElementById('loadMsgWrap');
+        messages.forEach(txt => {
+            const s = document.createElement('span');
+            s.className = 'load-msg';
+            s.textContent = txt;
+            msgWrap.appendChild(s);
+        });
+        const msgEls = msgWrap.querySelectorAll('.load-msg');
+
+        /* ── Eased schedule: fast start → slow end ── */
+        function buildSchedule(totalMs, n) {
+            const weights = Array.from({length: n}, (_, i) => Math.pow((i + 1) / n, 2.6));
+            const total   = weights.reduce((a, b) => a + b, 0);
+            let t = 0;
+            return weights.map(w => { const d = t; t += (w / total) * totalMs; return d; });
+        }
+        const msgSchedule = buildSchedule(LOAD_DURATION * 0.92, messages.length);
+
+        let currentMsg = -1;
+        function showMsg(i) {
+            if (currentMsg >= 0) msgEls[currentMsg].classList.remove('visible');
+            currentMsg = i;
+            if (i < msgEls.length) msgEls[i].classList.add('visible');
+        }
+        msgSchedule.forEach((delay, i) => setTimeout(() => showMsg(i), delay));
+
+        /* ── Progress bar: easeOutQuart ── */
+        const fill    = document.getElementById('progressFill');
+        const pctText = document.getElementById('loadPercent');
+
+        function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+        let startTs = null;
+        function tickProgress(ts) {
+            if (!startTs) startTs = ts;
+            const raw   = Math.min((ts - startTs) / LOAD_DURATION, 1);
+            const eased = easeOutQuart(raw);
+            const pct   = Math.floor(eased * 100);
+            fill.style.width   = pct + '%';
+            pctText.textContent = pct + '%';
+            if (raw < 1) requestAnimationFrame(tickProgress);
+        }
+        requestAnimationFrame(tickProgress);
+
+        /* ── Phase transitions ── */
+        // Phase 1 → 2: loading fades out, main content fades in
+        setTimeout(() => {
+            loadScreen.classList.add('fade-out');
+
+            setTimeout(() => {
+                loadScreen.style.display = 'none';
+
+                // Reveal bg photo + fade in tree/field with main content
+                bgPhoto.classList.add('visible');
+                fieldStrip.classList.add('visible');
+
+                mainContent.classList.add('visible');
+                window.__pageFullyLoaded = true;
+            }, 720);   // after loading fade-out transition
+
+        }, LOAD_DURATION);
+    })();
+
+
+    /* ════════════════════════════════════════════════════════════
+       MAIN INTERACTION LOGIC (original, unchanged)
+    ════════════════════════════════════════════════════════════ */
+    (function () {
+        const question     = document.getElementById('question');
+        const buttonRow    = document.getElementById('buttonRow');
+        const yesBtn       = document.getElementById('yesBtn');
+        const noBtn        = document.getElementById('noBtn');
+        const finalSection = document.getElementById('finalSection');
+
+        function isNoInsideRow() { return noBtn.parentNode === buttonRow; }
+
+        /* ── Smooth continuous "running" flee state ── */
+        let btnPos      = null;   // current { x, y } (top-left, px)
+        let btnTarget   = null;   // { x, y } the button is gliding toward
+        let pointerX    = -9999;  // last known cursor/finger position
+        let pointerY    = -9999;
+        let fleeLoopId  = null;
+
+        function clampToViewport(x, y, bw, bh) {
+            const margin = 12;
+            const vw = window.innerWidth, vh = window.innerHeight;
+            return {
+                x: Math.min(Math.max(x, margin), vw - bw - margin),
+                y: Math.min(Math.max(y, margin), vh - bh - margin)
+            };
+        }
+
+        /* Picks a runaway point on the far side of the button from the cursor */
+        function pickFleeTarget(bw, bh) {
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const cx = btnPos.x + bw / 2, cy = btnPos.y + bh / 2;
+            let dx = cx - pointerX, dy = cy - pointerY;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; dist = 1; }
+            const nx = dx / dist, ny = dy / dist;
+
+            // run a good long distance across the screen, with a little sideways wobble
+            const runDist = Math.max(vw, vh) * (0.45 + Math.random() * 0.25);
+            const wobbleAngle = (Math.random() - 0.5) * 0.9; // ~±25deg wobble so it doesn't run in a dead straight line
+            const cos = Math.cos(wobbleAngle), sin = Math.sin(wobbleAngle);
+            const wnx = nx * cos - ny * sin;
+            const wny = nx * sin + ny * cos;
+
+            let tx = cx + wnx * runDist - bw / 2;
+            let ty = cy + wny * runDist - bh / 2;
+
+            let clamped = clampToViewport(tx, ty, bw, bh);
+
+            return clamped;
+        }
+
+        function fleeStep() {
+            if (!noBtn.classList.contains('moved') || noBtn.classList.contains('hidden')) {
+                fleeLoopId = null;
+                return;
+            }
+            const bw = noBtn.offsetWidth, bh = noBtn.offsetHeight;
+            const cx = btnPos.x + bw / 2, cy = btnPos.y + bh / 2;
+            const dist = Math.sqrt(Math.pow(cx - pointerX, 2) + Math.pow(cy - pointerY, 2));
+
+            // cursor is close enough → pick (or refresh) a runaway target
+            if (dist < FLEE_RADIUS_MOUSE) {
+                if (!btnTarget || Math.sqrt(Math.pow(btnTarget.x - btnPos.x, 2) + Math.pow(btnTarget.y - btnPos.y, 2)) < 6) {
+                    btnTarget = pickFleeTarget(bw, bh);
+                }
+            }
+
+            if (btnTarget) {
+                // ease toward the target — faster when the cursor is closer, for a natural "sprint" feel
+                const closeness = Math.max(0, Math.min(1, 1 - dist / FLEE_RADIUS_MOUSE));
+                const speed = 0.16 + closeness * 0.28;
+                btnPos.x += (btnTarget.x - btnPos.x) * speed;
+                btnPos.y += (btnTarget.y - btnPos.y) * speed;
+                noBtn.style.left = btnPos.x + 'px';
+                noBtn.style.top  = btnPos.y + 'px';
+            }
+
+            fleeLoopId = requestAnimationFrame(fleeStep);
+        }
+
+        function startFleeLoop() {
+            if (fleeLoopId === null) fleeLoopId = requestAnimationFrame(fleeStep);
+        }
+
+        function moveNoButton() {
+            const wasInRow = isNoInsideRow();
+            if (wasInRow) {
+                const r = noBtn.getBoundingClientRect();
+                buttonRow.removeChild(noBtn);
+                document.body.appendChild(noBtn);
+                noBtn.style.position = 'fixed';
+                noBtn.classList.add('moved');
+                noBtn.style.maxWidth = 'min(170px, 38vw)';
+                btnPos = clampToViewport(r.left, r.top, noBtn.offsetWidth, noBtn.offsetHeight);
+                noBtn.style.left = btnPos.x + 'px';
+                noBtn.style.top  = btnPos.y + 'px';
+            } else if (!btnPos) {
+                const r = noBtn.getBoundingClientRect();
+                btnPos = clampToViewport(r.left, r.top, noBtn.offsetWidth, noBtn.offsetHeight);
+            }
+            noBtn.style.right  = 'auto';
+            noBtn.style.bottom = 'auto';
+
+            // give it an immediate push away from the current pointer position, then let the loop take over
+            btnTarget = pickFleeTarget(noBtn.offsetWidth, noBtn.offsetHeight);
+            startFleeLoop();
+        }
+
+        function burstHearts(originX, originY) {
+            const emojis = ['💖','💗','💕','💓','🌸','✨','💝'];
+            for (let i = 0; i < 18; i++) {
+                const el    = document.createElement('span');
+                el.className = 'heart-burst';
+                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                const angle  = Math.random() * Math.PI * 2;
+                const dist   = 80 + Math.random() * 160;
+                el.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                el.style.setProperty('--dy', Math.sin(angle) * dist - 60 + 'px');
+                el.style.left = originX + 'px';
+                el.style.top  = originY + 'px';
+                document.body.appendChild(el);
+                el.addEventListener('animationend', () => el.remove());
+            }
+        }
+
+        function onYes(e) {
+            const rect = yesBtn.getBoundingClientRect();
+            burstHearts(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            question.classList.add('hidden');
+            buttonRow.classList.add('hidden');
+            if (!isNoInsideRow()) { noBtn.classList.add('hidden'); }
+            setTimeout(() => { finalSection.style.display = 'flex'; }, 200);
+        }
+
+        /* ── Wide-radius cursor tracking: flee before the mouse arrives ── */
+        const FLEE_RADIUS_MOUSE = 190;   // px — cursor proximity that triggers flee
+        const FLEE_RADIUS_TOUCH = 180;   // px — finger proximity that triggers flee
+
+        function distToNoBtn(cx, cy) {
+            const r = noBtn.getBoundingClientRect();
+            return Math.sqrt(
+                Math.pow(cx - (r.left + r.width  / 2), 2) +
+                Math.pow(cy - (r.top  + r.height / 2), 2)
+            );
+        }
+
+        /* Keep pointer position fresh; once the button has entered "moved" state,
+           the rAF flee loop reads pointerX/pointerY every frame for a smooth glide.
+           Guarded by __pageFullyLoaded so nothing reacts while the loading/skeleton
+           screens are still animating on top. */
+        document.addEventListener('mousemove', e => {
+            pointerX = e.clientX;
+            pointerY = e.clientY;
+            if (!window.__pageFullyLoaded) return;
+            if (noBtn.classList.contains('hidden')) return;
+            if (isNoInsideRow()) {
+                // still docked in the row — trigger the first getaway once cursor gets close
+                if (distToNoBtn(e.clientX, e.clientY) < FLEE_RADIUS_MOUSE) moveNoButton();
+            } else {
+                startFleeLoop();
+            }
+        });
+
+        /* Flee on first touch approach (before finger lands on button) */
+        noBtn.addEventListener('touchstart', e => {
+            if (!window.__pageFullyLoaded) return;
+            moveNoButton();
+        }, { passive: true });
+        noBtn.addEventListener('click', e => {
+            e.preventDefault();
+            if (!window.__pageFullyLoaded) return;
+            moveNoButton();
+        });
+        yesBtn.addEventListener('click', onYes);
+
+        window.addEventListener('resize', () => {
+            if (!isNoInsideRow() && noBtn.classList.contains('moved') && !noBtn.classList.contains('hidden') && btnPos) {
+                const bw = noBtn.offsetWidth, bh = noBtn.offsetHeight;
+                btnPos = clampToViewport(btnPos.x, btnPos.y, bw, bh);
+                noBtn.style.left = btnPos.x + 'px';
+                noBtn.style.top  = btnPos.y + 'px';
+            }
+        });
+
+        document.addEventListener('touchmove', e => {
+            const touch = e.touches[0];
+            if (!touch) return;
+            pointerX = touch.clientX;
+            pointerY = touch.clientY;
+            if (!window.__pageFullyLoaded) return;
+            if (noBtn.classList.contains('hidden')) return;
+            if (isNoInsideRow()) {
+                if (distToNoBtn(touch.clientX, touch.clientY) < FLEE_RADIUS_TOUCH) moveNoButton();
+            } else {
+                startFleeLoop();
+            }
+        }, { passive: true });
+    })();
+    </script>
+</body>
+</html>
